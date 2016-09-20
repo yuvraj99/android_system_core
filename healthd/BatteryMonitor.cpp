@@ -184,8 +184,11 @@ BatteryMonitor::PowerSupplyType BatteryMonitor::readPowerSupplyType(const String
         return ANDROID_POWER_SUPPLY_TYPE_UNKNOWN;
 
     ret = (BatteryMonitor::PowerSupplyType)mapSysfsString(buf, supplyTypeMap);
-    if (ret < 0)
+
+    if (ret < 0) {
+        //KLOG_WARNING(LOG_TAG, "Unknown power supply type '%s'\n", buf);
         ret = ANDROID_POWER_SUPPLY_TYPE_UNKNOWN;
+    }
 
     return ret;
 }
