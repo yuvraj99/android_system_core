@@ -1975,7 +1975,6 @@ static int sdcardfs_setup(const char *source_path, const char *dest_path, uid_t 
     return 0;
 }
 
-#ifndef KERNEL_LEGACY_SDCARDFS
 static int sdcardfs_setup_bind_remount(const char *source_path, const char *dest_path,
                                         gid_t gid, mode_t mask) {
     char opts[256];
@@ -1998,7 +1997,6 @@ static int sdcardfs_setup_bind_remount(const char *source_path, const char *dest
 
     return 0;
 }
-#endif
 
 static void run_sdcardfs(const char* source_path, const char* label, uid_t uid,
         gid_t gid, userid_t userid, bool multi_user, bool full_write) {
@@ -2016,14 +2014,8 @@ static void run_sdcardfs(const char* source_path, const char* label, uid_t uid,
          * permissions are completely masked off. */
         if (sdcardfs_setup(source_path, dest_path_default, uid, gid, multi_user, userid,
                                                       AID_SDCARD_RW, 0006)
-#ifndef KERNEL_LEGACY_SDCARDFS
                 || sdcardfs_setup_bind_remount(dest_path_default, dest_path_read, AID_EVERYBODY, 0027)
                 || sdcardfs_setup_bind_remount(dest_path_default, dest_path_write,
-#else
-                || sdcardfs_setup(source_path, dest_path_read, uid, gid, multi_user, userid,
-                                                      AID_EVERYBODY, 0027)
-                || sdcardfs_setup(source_path, dest_path_write, uid, gid, multi_user, userid,
-#endif
                                                       AID_EVERYBODY, full_write ? 0007 : 0027)) {
             ERROR("failed to fuse_setup\n");
             exit(1);
@@ -2034,15 +2026,9 @@ static void run_sdcardfs(const char* source_path, const char* label, uid_t uid,
          * deep inside attr_from_stat(). */
         if (sdcardfs_setup(source_path, dest_path_default, uid, gid, multi_user, userid,
                                                       AID_SDCARD_RW, 0006)
-#ifndef KERNEL_LEGACY_SDCARDFS
                 || sdcardfs_setup_bind_remount(dest_path_default, dest_path_read,
                                                       AID_EVERYBODY, full_write ? 0027 : 0022)
                 || sdcardfs_setup_bind_remount(dest_path_default, dest_path_write,
-#else
-                || sdcardfs_setup(source_path, dest_path_read, uid, gid, multi_user, userid,
-                                                       AID_EVERYBODY, full_write ? 0027 : 0022)
-                || sdcardfs_setup(source_path, dest_path_write, uid, gid, multi_user, userid,
-#endif
                                                       AID_EVERYBODY, full_write ? 0007 : 0022)) {
             ERROR("failed to fuse_setup\n");
             exit(1);
