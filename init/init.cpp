@@ -323,6 +323,37 @@ static int console_init_action(const std::vector<std::string>& args)
     return 0;
 }
 
+#ifdef MTK_HARDWARE
+static int read_serialno()
+{
+    int fd;
+    char serialno[32];
+    size_t s;
+
+    fd = open("/sys/sys_info/serial_number", O_RDWR);
+    if (fd < 0) {
+        NOTICE("fail to open: %s\n", "/sys/sys_info/serial_number");
+        return 0;
+    }
+    s = read(fd, serialno, sizeof(char)*32);
+
+    serialno[s-1] = '\0';
+
+    close(fd);
+
+    if (s <= 0) {
+	    NOTICE("could not read serial number sys file\n");
+	    return 0;
+	}
+
+    NOTICE("serial number=%s\n",serialno);
+
+    property_set("ro.boot.serialno", serialno);
+
+    return 1;
+}
+#endif
+
 static void import_kernel_nv(const std::string& key, const std::string& value, bool for_emulator) {
     if (key.empty()) return;
 
@@ -366,7 +397,11 @@ static void export_kernel_boot_props() {
         { "ro.boot.mode",       "ro.bootmode",   "unknown", },
         { "ro.boot.baseband",   "ro.baseband",   "unknown", },
         { "ro.boot.bootloader", "ro.bootloader", "unknown", },
+#ifndef old_kernel
         { "ro.boot.hardware",   "ro.hardware",   "unknown", },
+#else
+        { "ro.boot.hardware",   "ro.hardware",   old_kernel, },
+#endif
 #ifndef IGNORE_RO_BOOT_REVISION
         { "ro.boot.revision",   "ro.revision",   "0", },
 #endif
@@ -417,6 +452,10 @@ static void process_kernel_cmdline() {
     // as properties.
     import_kernel_cmdline(false, import_kernel_nv);
     if (qemu[0]) import_kernel_cmdline(true, import_kernel_nv);
+
+#ifdef MTK_HARDWARE
+    read_serialno();
+#endif
 }
 
 static int property_enable_triggers_action(const std::vector<std::string>& args)
@@ -440,6 +479,7 @@ static void selinux_init_all_handles(void)
     sehandle_prop = selinux_android_prop_context_handle();
 }
 
+#if 0
 enum selinux_enforcing_status { SELINUX_PERMISSIVE, SELINUX_ENFORCING };
 
 static selinux_enforcing_status selinux_status_from_cmdline() {
@@ -453,11 +493,12 @@ static selinux_enforcing_status selinux_status_from_cmdline() {
 
     return status;
 }
+#endif
 
 static bool selinux_is_enforcing(void)
 {
     if (ALLOW_PERMISSIVE_SELINUX) {
-        return selinux_status_from_cmdline() == SELINUX_ENFORCING;
+        return false;
     }
     return true;
 }
@@ -553,7 +594,7 @@ static int charging_mode_booting(void) {
     }
 
     close(f);
-    return ('1' == cmb);
+    return ('8' == cmb);
 #endif
 }
 
